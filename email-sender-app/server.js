@@ -11,6 +11,7 @@ const { TIMEOUT } = require('dns');
 const fs = require('fs');
 const rateLimit = require('express-rate-limit');
 const logFile = 'server.log';
+const MailComposer = require('mailcomposer');
 require('dotenv').config();
 
 const app = express();
@@ -77,8 +78,8 @@ function requireAuth(req, res, next) {
 
 const OAuth2 = google.auth.OAuth2;
 
-// Function to create Nodemailer transporter with OAuth2 for Gmail
-async function getTransporter(userId) {
+// Function to get OAuth2 client for Gmail API
+async function getAuth(userId) {
   const user = await new Promise((resolve, reject) => {
     db.get('SELECT username, gmail_client_id, gmail_client_secret, gmail_refresh_token FROM users WHERE id = ?', [userId], (err, row) => {
       if (err) reject(err);
@@ -100,23 +101,9 @@ async function getTransporter(userId) {
     refresh_token: user.gmail_refresh_token
   });
 
-  const accessToken = await oauth2Client.getAccessToken();
+  await oauth2Client.getAccessToken(); // Ensure access token is available
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      type: 'OAuth2',
-      user: user.username,
-      clientId: user.gmail_client_id,
-      clientSecret: user.gmail_client_secret,
-      refreshToken: user.gmail_refresh_token,
-      accessToken: accessToken.token
-    },
-    connectionTimeout: 60000,
-    socketTimeout: 60000
-  });
-
-  return transporter;
+  return oauth2Client;
 }
 
 async function verifyEmail(email) {
@@ -292,9 +279,25 @@ app.post('/send-email', requireAuth, upload.single('attachment'), async (req, re
     };
 
     try {
-      const transporter = await getTransporter(req.session.userId);
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent to ' + email + ': ' + info.response);
+      const auth = await getAuth(req.session.userId);
+      const gmail = google.gmail({ version: 'v1', auth });
+
+      const mail = new MailComposer(mailOptions);
+      const message = await new Promise((resolve, reject) => {
+        mail.build((err, message) => {
+          if (err) reject(err);
+          else resolve(message);
+        });
+      });
+
+      const raw = message.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      await gmail.users.messages.send({
+        userId: 'me',
+        resource: { raw }
+      });
+
+      console.log('Email sent to ' + email);
       successCount++;
     } catch (error) {
       console.error('Error sending email to ' + email + ':', error);
