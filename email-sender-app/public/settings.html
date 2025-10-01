@@ -54,22 +54,31 @@
 <body>
     <h1>Update Email Settings</h1>
     <div class="instructions">
-        <strong>Instructions to get Gmail App Password:</strong>
+        <strong>Instructions to set up Gmail OAuth2 for sending emails:</strong>
         <ol>
-            <li>Enable 2-Step Verification on your Gmail account.</li>
-            <li>Go to <a href="https://myaccount.google.com/security" target="_blank">Google Account Security</a>.</li>
-            <li>Under "Signing in to Google", click "App passwords".</li>
-            <li>Select "Mail" and "Other (custom name)", enter "Email Sender App".</li>
-            <li>Click "Generate" and use the 16-character password below.</li>
+            <li>Go to the <a href="https://console.developers.google.com/" target="_blank">Google Cloud Console</a>.</li>
+            <li>Create a new project or select an existing one.</li>
+            <li>Enable the Gmail API for your project.</li>
+            <li>Go to "Credentials" and create an OAuth 2.0 Client ID (Web application).</li>
+            <li>Set authorized redirect URIs to: <code>https://developers.google.com/oauthplayground</code></li>
+            <li>Copy the Client ID and Client Secret from the credentials.</li>
+            <li>Go to <a href="https://developers.google.com/oauthplayground" target="_blank">OAuth 2.0 Playground</a>.</li>
+            <li>Click the gear icon, check "Use your own OAuth credentials", and enter your Client ID and Secret.</li>
+            <li>Select "https://mail.google.com/" from the list and authorize access.</li>
+            <li>Exchange the authorization code for tokens, and copy the Refresh Token.</li>
+            <li>Enter your Gmail address, Client ID, Client Secret, and Refresh Token below.</li>
         </ol>
-
+        <p><strong>Note:</strong> Each user must configure their own Gmail OAuth2 credentials. The app uses these to send emails from your Gmail account.</p>
     </div>
     <form action="/update-env" method="post">
-        <label for="email_user">Gmail Address:</label>
-        <input type="email" id="email_user" name="email_user" required>
+        <label for="gmail_client_id">Gmail Client ID:</label>
+        <input type="text" id="gmail_client_id" name="gmail_client_id" required>
 
-        <label for="email_pass">App Password:</label>
-        <input type="password" id="email_pass" name="email_pass" required>
+        <label for="gmail_client_secret">Gmail Client Secret:</label>
+        <input type="password" id="gmail_client_secret" name="gmail_client_secret" required>
+
+        <label for="gmail_refresh_token">Gmail Refresh Token:</label>
+        <input type="password" id="gmail_refresh_token" name="gmail_refresh_token" required>
 
         <button type="submit">Update Settings</button>
     </form>
