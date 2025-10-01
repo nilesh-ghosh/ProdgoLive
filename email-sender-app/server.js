@@ -120,6 +120,10 @@ async function getTransporter(userId) {
 }
 
 async function verifyEmail(email) {
+  if (!process.env.GMAIL_VERIFIER_API_KEY) {
+    // Skip verification if API key not set
+    return { success: true, result: { valid: true } };
+  }
   try {
     const response = await axios.post(
       'https://api.validkit.com/api/v1/verify',
