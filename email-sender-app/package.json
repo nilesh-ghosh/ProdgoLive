@@ -1,0 +1,21 @@
+{
+  "name": "email-sender-app",
+  "version": "1.0.0",
+  "description": "Simple web app to send emails to multiple recipients",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.1.0",
+    "express-session": "^1.18.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.1",
+    "sqlite3": "^5.1.7",
+    "verifalia": "^5.0.0"
+  }
+}

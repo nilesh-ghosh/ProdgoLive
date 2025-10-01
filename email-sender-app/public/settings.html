@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Settings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .instructions {
+            background: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            margin-bottom: 15px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Update Email Settings</h1>
+    <div class="instructions">
+        <strong>Instructions to get Gmail App Password:</strong>
+        <ol>
+            <li>Enable 2-Step Verification on your Gmail account.</li>
+            <li>Go to <a href="https://myaccount.google.com/security" target="_blank">Google Account Security</a>.</li>
+            <li>Under "Signing in to Google", click "App passwords".</li>
+            <li>Select "Mail" and "Other (custom name)", enter "Email Sender App".</li>
+            <li>Click "Generate" and use the 16-character password below.</li>
+        </ol>
+
+    </div>
+    <form action="/update-env" method="post">
+        <label for="email_user">Gmail Address:</label>
+        <input type="email" id="email_user" name="email_user" required>
+
+        <label for="email_pass">App Password:</label>
+        <input type="password" id="email_pass" name="email_pass" required>
+
+        <button type="submit">Update Settings</button>
+    </form>
+</body>
+</html>
