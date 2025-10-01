@@ -1,0 +1,37 @@
+Based on the current code, here's a summary of the application's workflow:
+
+## Application Workflow
+
+### 1. **User Registration and Authentication**
+- Users sign up with a unique email (username) and strong password (8+ characters with uppercase, lowercase, number, and special character).
+- Signup is rate-limited to 2 per IP.
+- Users log in with email and password, sessions are managed via express-session.
+
+### 2. **Dashboard and Navigation**
+- After login, users are redirected to the dashboard.
+- Users can navigate to the email sender page or settings page.
+
+### 3. **Settings Configuration**
+- Users can update their Gmail OAuth2 credentials (Client ID, Client Secret, Refresh Token) in the settings page.
+- These credentials are stored per user in the SQLite database.
+
+### 4. **Email Sending Process**
+- Users go to the sender page to compose emails.
+- They can send emails to multiple recipients (comma-separated), with subject, content, and optional attachment.
+- Before sending, each recipient email is verified using the ValidKit API.
+- Emails are sent using Nodemailer with OAuth2 authentication for Gmail, using the user's stored credentials.
+- The 'from' address is the user's email (username).
+- There's a 5-second delay between each email send.
+- Success/failure counts are reported back to the user.
+
+### 5. **Security and Features**
+- Trust proxy is set to 1 for proper IP detection behind Render.
+- Rate limiting on signup.
+- File uploads are handled with Multer, stored in 'uploads' directory.
+- Email verification ensures only valid emails are sent to.
+- Logging of email verification results.
+
+### 6. **Database**
+- SQLite database with users table containing id, username, password, OAuth2 credentials, and created_at.
+
+The app is designed for multiple users, each with their own Gmail OAuth2 setup for sending emails.

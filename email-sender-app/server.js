@@ -3,6 +3,7 @@ const session = require('express-session');
 const bcrypt = require('bcryptjs');
 const sqlite3 = require('sqlite3').verbose();
 const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 const multer = require('multer');
 const path = require('path');
 const axios = require('axios');
@@ -28,6 +29,9 @@ db.serialize(() => {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
+    gmail_client_id TEXT,
+    gmail_client_secret TEXT,
+    gmail_refresh_token TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
   // Note: created_at column is included in CREATE TABLE. If existing DB lacks it, delete users.db to recreate.
@@ -71,18 +75,44 @@ function requireAuth(req, res, next) {
   res.redirect('/');
 }
 
-// Function to create Nodemailer transporter with current env vars
-function getTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
-    },
-    connectionTimeout: 60000,
-    socketTimeout: 60000
+const OAuth2 = google.auth.OAuth2;
+
+// Function to create Nodemailer transporter with OAuth2 for Gmail
+async function getTransporter(userId) {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT username, gmail_client_id, gmail_client_secret, gmail_refresh_token FROM users WHERE id = ?', [userId], (err, user) => {
+      if (err || !user || !user.gmail_client_id || !user.gmail_client_secret || !user.gmail_refresh_token) {
+        return reject(new Error('OAuth2 credentials not set for user.'));
+      }
+
+      const oauth2Client = new OAuth2(
+        user.gmail_client_id,
+        user.gmail_client_secret,
+        'https://developers.google.com/oauthplayground' // Redirect URL
+      );
+
+      oauth2Client.setCredentials({
+        refresh_token: user.gmail_refresh_token
+      });
+
+      const accessToken = oauth2Client.getAccessToken();
+
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          type: 'OAuth2',
+          user: user.username,
+          clientId: user.gmail_client_id,
+          clientSecret: user.gmail_client_secret,
+          refreshToken: user.gmail_refresh_token,
+          accessToken: accessToken
+        },
+        connectionTimeout: 60000,
+        socketTimeout: 60000
+      });
+
+      resolve(transporter);
+    });
   });
 }
 
@@ -206,36 +236,15 @@ app.get('/settings', requireAuth, (req, res) => {
 });
 
 app.post('/update-env', requireAuth, (req, res) => {
-  const { email_user, email_pass } = req.body;
+  const { email_user, gmail_client_id, gmail_client_secret, gmail_refresh_token } = req.body;
 
-  // Read current .env
-  let envContent = fs.readFileSync('.env', 'utf8');
-  let lines = envContent.split('\n');
-
-  // Update or add EMAIL_USER
-  let userIndex = lines.findIndex(line => line.startsWith('EMAIL_USER='));
-  if (userIndex !== -1) {
-    lines[userIndex] = `EMAIL_USER=${email_user}`;
-  } else {
-    lines.push(`EMAIL_USER=${email_user}`);
-  }
-
-  // Update or add EMAIL_PASS
-  let passIndex = lines.findIndex(line => line.startsWith('EMAIL_PASS='));
-  if (passIndex !== -1) {
-    lines[passIndex] = `EMAIL_PASS=${email_pass}`;
-  } else {
-    lines.push(`EMAIL_PASS=${email_pass}`);
-  }
-
-  // Write back
-  fs.writeFileSync('.env', lines.join('\n'));
-
-  // Update in-memory env vars
-  process.env.EMAIL_USER = email_user;
-  process.env.EMAIL_PASS = email_pass;
-
-  res.send('Settings updated successfully. Changes applied immediately. <a href="/sender">Back to Sender</a>');
+  db.run('UPDATE users SET gmail_client_id = ?, gmail_client_secret = ?, gmail_refresh_token = ? WHERE id = ?',
+    [gmail_client_id, gmail_client_secret, gmail_refresh_token, req.session.userId], function(err) {
+    if (err) {
+      return res.status(500).send('Database error.');
+    }
+    res.send('Settings updated successfully. Changes applied immediately. <a href="/sender">Back to Sender</a>');
+  });
 });
 
 // Route to handle form submission
@@ -263,7 +272,7 @@ app.post('/send-email', requireAuth, upload.single('attachment'), async (req, re
     }
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: req.session.username,
       to: email,
       subject: subject,
       text: content,
@@ -276,7 +285,7 @@ app.post('/send-email', requireAuth, upload.single('attachment'), async (req, re
     };
 
     try {
-      const transporter = getTransporter();
+      const transporter = await getTransporter(req.session.userId);
       const info = await transporter.sendMail(mailOptions);
       console.log('Email sent to ' + email + ': ' + info.response);
       successCount++;
