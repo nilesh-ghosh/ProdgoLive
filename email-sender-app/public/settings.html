@@ -58,14 +58,15 @@
         <ol>
             <li>Go to the <a href="https://console.developers.google.com/" target="_blank">Google Cloud Console</a>.</li>
             <li>Create a new project or select an existing one.</li>
-            <li>Enable the Gmail API for your project.</li>
-            <li>Go to "Credentials" and create an OAuth 2.0 Client ID (Web application).</li>
-            <li>Set authorized redirect URIs to: <code>https://developers.google.com/oauthplayground</code></li>
+            <li>Go to "APIs & Services" > "Library", search for "Gmail API", and click "Enable".</li>
+            <li>Go to "APIs & Services" > "Credentials", click "Create Credentials" dropdown > "OAuth 2.0 Client ID", select "Web application", set a name, and add <code>https://developers.google.com/oauthplayground</code> as an authorized redirect URI.</li>
+            <li>Go to "APIs & Services" > "OAuth consent screen", under "Audience", scroll down to "Test users", click "Add users", enter your Gmail address, and save.</li>
             <li>Copy the Client ID and Client Secret from the credentials.</li>
             <li>Go to <a href="https://developers.google.com/oauthplayground" target="_blank">OAuth 2.0 Playground</a>.</li>
             <li>Click the gear icon, check "Use your own OAuth credentials", and enter your Client ID and Secret.</li>
-            <li>Select "https://mail.google.com/" from the list and authorize access.</li>
-            <li>Exchange the authorization code for tokens, and copy the Refresh Token.</li>
+            <li>In the "Input your own scopes" box, enter: <code>https://mail.google.com/</code></li>
+            <li>Click "Authorize APIs" and authorize access.</li>
+            <li>Click "Exchange authorization code for tokens" and copy the Refresh Token.</li>
             <li>Enter your Gmail address, Client ID, Client Secret, and Refresh Token below.</li>
         </ol>
         <p><strong>Note:</strong> Each user must configure their own Gmail OAuth2 credentials. The app uses these to send emails from your Gmail account.</p>

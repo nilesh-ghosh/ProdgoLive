@@ -79,41 +79,46 @@ const OAuth2 = google.auth.OAuth2;
 
 // Function to create Nodemailer transporter with OAuth2 for Gmail
 async function getTransporter(userId) {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT username, gmail_client_id, gmail_client_secret, gmail_refresh_token FROM users WHERE id = ?', [userId], (err, user) => {
-      if (err || !user || !user.gmail_client_id || !user.gmail_client_secret || !user.gmail_refresh_token) {
-        return reject(new Error('OAuth2 credentials not set for user.'));
-      }
-
-      const oauth2Client = new OAuth2(
-        user.gmail_client_id,
-        user.gmail_client_secret,
-        'https://developers.google.com/oauthplayground' // Redirect URL
-      );
-
-      oauth2Client.setCredentials({
-        refresh_token: user.gmail_refresh_token
-      });
-
-      const accessToken = oauth2Client.getAccessToken();
-
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          type: 'OAuth2',
-          user: user.username,
-          clientId: user.gmail_client_id,
-          clientSecret: user.gmail_client_secret,
-          refreshToken: user.gmail_refresh_token,
-          accessToken: accessToken
-        },
-        connectionTimeout: 60000,
-        socketTimeout: 60000
-      });
-
-      resolve(transporter);
+  const user = await new Promise((resolve, reject) => {
+    db.get('SELECT username, gmail_client_id, gmail_client_secret, gmail_refresh_token FROM users WHERE id = ?', [userId], (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
     });
   });
+
+  if (!user || !user.gmail_client_id || !user.gmail_client_secret || !user.gmail_refresh_token) {
+    throw new Error('OAuth2 credentials not set for user.');
+  }
+
+  const oauth2Client = new OAuth2(
+    user.gmail_client_id,
+    user.gmail_client_secret,
+    'https://developers.google.com/oauthplayground' // Redirect URL
+  );
+
+  oauth2Client.setCredentials({
+    refresh_token: user.gmail_refresh_token
+  });
+
+  const accessToken = await oauth2Client.getAccessToken();
+
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      type: 'OAuth2',
+      user: user.username,
+      clientId: user.gmail_client_id,
+      clientSecret: user.gmail_client_secret,
+      refreshToken: user.gmail_refresh_token,
+      accessToken: accessToken.token
+    },
+    connectionTimeout: 60000,
+    socketTimeout: 60000
+  });
+
+  return transporter;
 }
 
 async function verifyEmail(email) {
