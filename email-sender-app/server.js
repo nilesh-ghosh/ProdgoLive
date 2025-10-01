@@ -13,6 +13,7 @@ const logFile = 'server.log';
 require('dotenv').config();
 
 const app = express();
+app.set('trust proxy', true);
 const port = 3000;
 
 // Initialize SQLite database
@@ -69,10 +70,14 @@ function requireAuth(req, res, next) {
 function getTransporter() {
   return nodemailer.createTransport({
     service: 'gmail',
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
-    }
+    },
+    connectionTimeout: 60000,
+    socketTimeout: 60000
   });
 }
 
