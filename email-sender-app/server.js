@@ -13,8 +13,13 @@ const logFile = 'server.log';
 require('dotenv').config();
 
 const app = express();
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 const port = 3000;
+
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads', { recursive: true });
+}
 
 // Initialize SQLite database
 const db = new sqlite3.Database('users.db');
@@ -70,8 +75,8 @@ function requireAuth(req, res, next) {
 function getTransporter() {
   return nodemailer.createTransport({
     service: 'gmail',
-    port: 465,
-    secure: true,
+    port: 587,
+    secure: false,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS
