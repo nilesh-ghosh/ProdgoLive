@@ -191,7 +191,10 @@ app.post('/signup', signupLimiter, (req, res) => {
       }
       return res.status(500).send('Database error.');
     }
-    res.redirect('/');
+    // On successful creation, set session userId and username
+    req.session.userId = this.lastID;
+    req.session.username = username;
+    res.redirect('/dashboard');
   });
 });
 
@@ -227,6 +230,19 @@ app.get('/sender', requireAuth, (req, res) => {
 
 app.get('/settings', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'settings.html'));
+});
+
+app.get('/get-settings', requireAuth, (req, res) => {
+  db.get('SELECT gmail_client_id, gmail_client_secret, gmail_refresh_token FROM users WHERE id = ?', [req.session.userId], (err, row) => {
+    if (err) {
+      return res.status(500).send('Database error.');
+    }
+    res.json({
+      gmail_client_id: row ? row.gmail_client_id || '' : '',
+      gmail_client_secret: row ? row.gmail_client_secret || '' : '',
+      gmail_refresh_token: row ? row.gmail_refresh_token || '' : ''
+    });
+  });
 });
 
 app.post('/update-env', requireAuth, (req, res) => {
@@ -269,7 +285,7 @@ app.post('/send-email', requireAuth, upload.single('attachment'), async (req, re
       from: req.session.username,
       to: email,
       subject: subject,
-      text: content,
+      html: content.replace(/\n/g, '<br>'),
       attachments: req.file ? [
         {
           filename: req.file.originalname,

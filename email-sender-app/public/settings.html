@@ -83,5 +83,15 @@
 
         <button type="submit">Update Settings</button>
     </form>
+    <script>
+        fetch('/get-settings')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('gmail_client_id').value = data.gmail_client_id;
+                document.getElementById('gmail_client_secret').value = data.gmail_client_secret;
+                document.getElementById('gmail_refresh_token').value = data.gmail_refresh_token;
+            })
+            .catch(error => console.error('Error fetching settings:', error));
+    </script>
 </body>
 </html>
