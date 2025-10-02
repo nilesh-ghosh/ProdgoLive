@@ -273,10 +273,14 @@ app.post('/send-email', requireAuth, upload.single('attachment'), async (req, re
       attachments: req.file ? [
         {
           filename: req.file.originalname,
-          path: req.file.path
+          content: fs.readFileSync(req.file.path),
+          contentType: req.file.mimetype
         }
       ] : []
     };
+
+    console.log('req.file:', req.file);
+    console.log('mailOptions:', mailOptions);
 
     try {
       const auth = await getAuth(req.session.userId);
@@ -290,7 +294,9 @@ app.post('/send-email', requireAuth, upload.single('attachment'), async (req, re
         });
       });
 
+      console.log('message length:', message.length);
       const raw = message.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      console.log('raw length:', raw.length);
 
       await gmail.users.messages.send({
         userId: 'me',
